@@ -1,6 +1,11 @@
 const express = require("express");
 const helmet = require("helmet");
+const session = require('express-session')
+const Store = require('connect-session-knex')(session)
 const cors = require("cors");
+
+// const authRouter = 
+// conts userRouter = 
 
 /**
   Do what needs to be done to support sessions with the `express-session` package!
@@ -17,8 +22,31 @@ const cors = require("cors");
 
 const server = express();
 
+server.use(session({
+  name: 'chocolatechip',
+  secret: process.env.SESSION_SECRET || 'keep this a secret, yeah?',
+  cookie: {
+    maxAge: 1000 * 60 * 60 ,
+    secure: false,
+    httpOnly: false
+  },
+  resave: false,
+  saveUninitialized: false,
+  store: new Store({
+    knex: require('../data/db-config'),
+    tablename: 'sessions',
+    sidfieldname: 'sid',
+    createtable: 'true',
+    clearInterval: 1000 * 60 * 60,
+  })
+}))
+
 server.use(helmet());
 server.use(express.json());
+
+// server.use('/api/users', usersRouter)
+// server.use('/api/auth', authRouter)
+
 server.use(cors());
 
 server.get("/", (req, res) => {

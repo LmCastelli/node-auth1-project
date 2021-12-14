@@ -1,6 +1,29 @@
 // Require `checkUsernameFree`, `checkUsernameExists` and `checkPasswordLength`
 // middleware functions from `auth-middleware.js`. You will need them here!
+const express = require('express')
+const router = express.Router()
+const bcrypt = require('bcryptjs')
+const Users = require('../users/users-model')
+const  { 
+  checkPasswordLength,
+  checkUsernameExists, 
+  checkUsernameFree
+} = require('./auth-middleware')
 
+router.post('/register', checkUsernameFree, checkPasswordLength, async  (req, res, next) => {
+  try {
+    const {username, password} = req.body
+    console.log(req.body)
+    const newUser = {
+      username, 
+      password: bcrypt.hashSync(password, 8),
+    }
+    const created = await Users.add(newUser)
+    res.status(200).json(created)
+  } catch (err) {
+    next(err)
+  }
+})
 
 /**
   1 [POST] /api/auth/register { "username": "sue", "password": "1234" }
@@ -25,6 +48,25 @@
   }
  */
 
+router.post('/login', checkUsernameExists, async (req, res, next) => {
+  try {
+    const {username, password} = req.body
+    const [userFromdDb] = await Users.findBy({username})
+    if (!userFromdDb) {
+      return next({message: 'Invalid credentials', status: 401})
+    }
+
+    const verifies = bcrypt.compareSync(password, userFromdDb.password)
+    if (!verifies) {
+      return next({message: 'Invalid credentials', status: 401})
+    }
+
+    req.session.user = userFromdDb
+    res.json({status: 200, message: `Welcome ${username}`})
+  } catch (err) {
+    next(err)
+  }
+})
 
 /**
   2 [POST] /api/auth/login { "username": "sue", "password": "1234" }
@@ -61,3 +103,4 @@
 
  
 // Don't forget to add the router to the `exports` object so it can be required in other modules
+module.exports = router

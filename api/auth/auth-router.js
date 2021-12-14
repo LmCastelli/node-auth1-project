@@ -85,6 +85,23 @@ router.post('/login', checkUsernameExists, async (req, res, next) => {
  */
 
 
+router.get('/logout', async (req, res, next) => {
+  try {
+    if (req.session.user) {
+      req.session.destroy((err) => {
+        if (err) {
+          res.json('how did we get here')
+        } else {
+          res.json({status: 200, message: 'logged out'})
+        }
+      })
+    } else {
+      res.json({status: 200, message: 'no session'})
+    }
+  } catch (err){
+    next(err)
+  }
+})
 /**
   3 [GET] /api/auth/logout
 
